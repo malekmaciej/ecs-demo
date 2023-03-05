@@ -10,7 +10,7 @@ resource "aws_iam_role" "ecsTaskExecutionRole" {
 
 resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   role       = aws_iam_role.ecsTaskExecutionRole.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"
 }
 
 resource "aws_ecs_cluster" "aws-ecs-cluster" {
@@ -34,7 +34,7 @@ resource "aws_cloudwatch_log_group" "log-group" {
 }
 
 resource "aws_ecs_task_definition" "aws-ecs-task" {
-  family = "${var.name}-task"
+  family = "${var.name}-squid-proxy"
 
   container_definitions = <<DEFINITION
   [
@@ -91,15 +91,18 @@ resource "aws_ecs_service" "aws-ecs-service" {
   network_configuration {
     subnets          = var.subnet_ids
     assign_public_ip = false
-    security_groups = var.security_group_ids
+    security_groups  = var.security_group_ids
   }
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.name}-ecs-service"
+  })
 
-#   load_balancer {
-#     target_group_arn = aws_lb_target_group.app_tg.arn
-#     container_name   = "${var.vpc_name}-container"
-#     container_port   = 5000
-#   }
-
-#  depends_on = [aws_lb_listener.app_lb_listener]
+  load_balancer {
+    target_group_arn = var.target_group_arn
+    container_name   = "${var.name}-squid-proxy"
+    container_port   = 3128
+  }
 }
 
