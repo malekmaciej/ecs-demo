@@ -21,6 +21,10 @@ variable "subnet_prefix" {
       az   = "eu-central-2b"
       cidr = "10.0.2.0/24"
     }
+    subnet-3 = {
+      az   = "eu-central-2c"
+      cidr = "10.0.0.0/24"
+    }
   }
 }
 

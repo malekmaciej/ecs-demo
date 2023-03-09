@@ -28,7 +28,18 @@ resource "aws_subnet" "private-2" {
   tags = merge(
     var.common_tags,
     {
-      Name = "${var.vpc_name}-subnet-1"
+      Name = "${var.vpc_name}-subnet-2"
+  })
+}
+
+resource "aws_subnet" "private-3" {
+  availability_zone = var.subnet_prefix.subnet-3["az"]
+  cidr_block        = var.subnet_prefix.subnet-3["cidr"]
+  vpc_id            = aws_vpc.vpc.id
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.vpc_name}-subnet-3"
   })
 }
 
@@ -185,13 +196,6 @@ resource "aws_route_table" "private-01" {
   })
 }
 
-resource "aws_route" "rt-1-igw" {
-  count                  = var.igw_enabled ? 1 : 0
-  route_table_id         = aws_route_table.private-01.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat-1[0].id
-}
-
 resource "aws_route_table" "private-02" {
   vpc_id = aws_vpc.vpc.id
   tags = merge(
@@ -201,6 +205,21 @@ resource "aws_route_table" "private-02" {
   })
 }
 
+resource "aws_route_table" "private-03" {
+  vpc_id = aws_vpc.vpc.id
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.vpc_name}-private-3"
+  })
+}
+
+resource "aws_route" "rt-1-igw" {
+  count                  = var.igw_enabled ? 1 : 0
+  route_table_id         = aws_route_table.private-01.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat-1[0].id
+}
 
 resource "aws_route" "rt-2-igw" {
   count                  = var.igw_enabled ? 1 : 0
@@ -208,6 +227,14 @@ resource "aws_route" "rt-2-igw" {
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.nat-2[0].id
 }
+
+resource "aws_route" "rt-3-igw" {
+  count                  = var.igw_enabled ? 1 : 0
+  route_table_id         = aws_route_table.private-03.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat-2[0].id
+}
+
 
 resource "aws_route_table_association" "private-01" {
   count          = var.igw_enabled ? 1 : 0
@@ -221,31 +248,10 @@ resource "aws_route_table_association" "private-02" {
   route_table_id = aws_route_table.private-02.id
 }
 
+resource "aws_route_table_association" "private-03" {
+  count          = var.igw_enabled ? 1 : 0
+  subnet_id      = aws_subnet.private-3.id
+  route_table_id = aws_route_table.private-03.id
+}
 
-# resource "aws_vpc_endpoint" "aws_interface_vpc_endpoints" {
-#   for_each            = var.interface_endpoints_to_create
-#   service_name        = "com.amazonaws.${var.region}.${each.value}"
-#   vpc_id              = aws_vpc.vpc.id
-#   vpc_endpoint_type   = "Interface"
-#   security_group_ids  = [aws_security_group.sg.id]
-#   subnet_ids          = values(aws_subnet.private)[*].id
-#   private_dns_enabled = true
-#   tags = merge(
-#     var.common_tags,
-#     {
-#       Name = "${var.vpc_name}-${each.value}"
-#   })
-# }
 
-# resource "aws_vpc_endpoint" "aws_gateway_vpc_endpoints" {
-#   for_each          = var.gateway_endpoints_to_create
-#   service_name      = "com.amazonaws.${var.region}.${each.value}"
-#   vpc_id            = aws_vpc.vpc.id
-#   vpc_endpoint_type = "Gateway"
-#   route_table_ids   = [aws_vpc.vpc.main_route_table_id]
-#   tags = merge(
-#     var.common_tags,
-#     {
-#       Name = "${var.vpc_name}-${each.value}"
-#   })
-# }
